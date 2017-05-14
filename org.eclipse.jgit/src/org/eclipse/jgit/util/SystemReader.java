@@ -120,7 +120,32 @@ public abstract class SystemReader {
 		@Override
 		public FileBasedConfig openUserConfig(Config parent, FS fs) {
 			final File home = fs.userHome();
-			return new FileBasedConfig(parent, new File(home, ".gitconfig"), fs); //$NON-NLS-1$
+
+			final File xdgConfig = new File(getXdgConfigHome(home),
+					"git" + File.separator + "config"); //$NON-NLS-1$ //$NON-NLS-2$
+
+			final File homeConfig = new File(home, ".gitconfig"); //$NON-NLS-1$
+
+			if (xdgConfig.exists()) {
+				if (homeConfig.exists()) {
+					return new FileBasedConfig(
+							new FileBasedConfig(parent, xdgConfig, fs),
+							homeConfig, fs);
+				} else {
+					return new FileBasedConfig(parent, xdgConfig, fs);
+				}
+			} else {
+				return new FileBasedConfig(parent, homeConfig, fs);
+			}
+		}
+
+		private File getXdgConfigHome(File home) {
+			String xdgConfigHome = getenv("XDG_CONFIG_HOME"); //$NON-NLS-1$
+			if (xdgConfigHome == null || xdgConfigHome.isEmpty()) {
+				return new File(home, ".config"); //$NON-NLS-1$
+			} else {
+				return new File(xdgConfigHome);
+			}
 		}
 
 		@Override
